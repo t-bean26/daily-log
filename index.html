@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Daily Log">
+<meta name="theme-color" content="#f5f4ef">
+<title>Daily Log</title>
+<link rel="apple-touch-icon" id="touch-icon" href="">
+<style>
+  :root {
+    --bg: #f5f4ef; --card: #ffffff; --ink: #1d2421; --muted: #66706b;
+    --line: #e3e1d9; --accent: #2f6f5e; --accent-ink: #ffffff;
+    --soft: #e7f0ec; --danger: #b3432f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141816; --card: #1d2320; --ink: #e9eeeb; --muted: #94a09a;
+      --line: #2c3430; --accent: #5fb59c; --accent-ink: #0d1512;
+      --soft: #233029; --danger: #e07a64;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+  body { padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 32px); }
+  main { max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 4px 0 2px; letter-spacing: -0.02em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  label:first-of-type { margin-top: 0; }
+  select, input[type=text], input[type=date], textarea {
+    width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; min-height: 44px;
+  }
+  textarea { min-height: 90px; resize: vertical; font-size: 13px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 12px 14px; min-height: 46px;
+    background: var(--accent); color: var(--accent-ink); cursor: pointer; width: 100%; margin-top: 12px;
+  }
+  button.secondary { background: var(--soft); color: var(--accent); }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  button.small { width: auto; min-height: 34px; padding: 6px 10px; margin: 0; font-size: 13px; }
+  .chip { display: inline-block; font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--accent); font-weight: 600; }
+  .chip.todo { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  .item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .item:first-of-type { border-top: 0; }
+  .item .t { font-weight: 600; }
+  .item .m { font-size: 13px; color: var(--muted); }
+  .x { background: none; color: var(--muted); border: 0; font-size: 22px; line-height: 1; padding: 4px 10px; min-height: 36px; width: auto; margin: 0; }
+  .counter { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .counter:first-of-type { border-top: 0; }
+  .counter .name { font-weight: 600; }
+  .counter .meta { font-size: 13px; color: var(--muted); }
+  .counter .num { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; text-align: right; line-height: 1; }
+  .counter .num small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-top: 3px; }
+  .empty { color: var(--muted); font-size: 14px; margin: 0; }
+  details summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+  details p, details li { font-size: 14px; color: var(--muted); }
+  details ol { padding-left: 20px; }
+  code { font-size: 12px; word-break: break-all; background: var(--bg); padding: 2px 5px; border-radius: 6px; }
+  .hidden { display: none !important; }
+  #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px); transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px; opacity: 0;
+    pointer-events: none; transition: opacity .2s; max-width: 90vw; text-align: center; }
+  #toast.show { opacity: 1; }
+  .warn { background: #fff3e0; color: #7a4a00; border-radius: 12px; padding: 10px 12px; font-size: 14px; margin-bottom: 14px; }
+  .foot { font-size: 12px; color: var(--muted); text-align: center; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Daily Log</h1>
+  <p class="sub"><span id="todayLabel"></span> &nbsp;<span id="statusChip" class="chip todo">Not logged yet</span></p>
+
+  <div id="storageWarn" class="warn hidden">This browser isn't letting the app save data, so entries will be lost when you close it. Open it from your home screen after adding it there.</div>
+
+  <section class="card">
+    <h2>Log</h2>
+    <label for="dateInput">Day</label>
+    <input type="date" id="dateInput">
+
+    <label for="drugSelect">Substance</label>
+    <select id="drugSelect"></select>
+
+    <div id="customWrap" class="hidden">
+      <label for="customInput">Custom name</label>
+      <input type="text" id="customInput" placeholder="Type a name" autocomplete="off">
+    </div>
+
+    <label for="noteInput">Amount or note (optional)</label>
+    <input type="text" id="noteInput" placeholder="e.g. 2 drinks, evening" autocomplete="off">
+
+    <button id="addBtn">Add to log</button>
+    <button id="noneBtn" class="secondary">Nothing used on this day</button>
+  </section>
+
+  <section class="card">
+    <h2 id="dayHeading">Entries for today</h2>
+    <div id="dayList"></div>
+  </section>
+
+  <section class="card">
+    <h2>Days sober</h2>
+    <div id="counters"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Track a substance I haven't logged</summary>
+      <label for="trackSelect">Substance</label>
+      <select id="trackSelect"></select>
+      <div id="trackCustomWrap" class="hidden">
+        <label for="trackCustom">Custom name</label>
+        <input type="text" id="trackCustom" placeholder="Type a name" autocomplete="off">
+      </div>
+      <label for="trackDate">Last used on (or the day you stopped)</label>
+      <input type="date" id="trackDate">
+      <button id="trackBtn" class="secondary">Start tracking</button>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>Recent entries</h2>
+    <div id="recent"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Set up twice-a-day reminders (iPhone)</summary>
+      <p>Web apps on iPhone can't schedule their own notifications, so use the built-in Reminders app:</p>
+      <ol>
+        <li>Open <b>Reminders</b> and tap <b>New Reminder</b>. Title it "Log today".</li>
+        <li>Tap the <b>(i)</b> button, turn on <b>Date</b> and <b>Time</b> (for example 12:00 PM), set <b>Repeat</b> to Daily.</li>
+        <li>Paste this app's link into the <b>URL</b> field: <code id="appUrl"></code></li>
+        <li>Make a second one for the evening (for example 9:00 PM).</li>
+      </ol>
+      <p>Tap the notification, then tap the link to open the app.</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Backup and restore</summary>
+      <p>Your log lives only on this phone. Copy a backup now and then and keep it somewhere safe, such as a private note.</p>
+      <button id="copyBtn" class="secondary">Copy backup</button>
+      <label for="restoreText">Restore from a backup</label>
+      <textarea id="restoreText" placeholder="Paste a backup here"></textarea>
+      <button id="restoreBtn" class="ghost">Restore</button>
+    </details>
+  </section>
+
+  <p class="foot">Need to talk to someone? SAMHSA National Helpline: 1-800-662-4357 (free, 24/7).</p>
+</main>
+<div id="toast"></div>
+
+<script>
+(function () {
+  var KEY = 'dailylog.v1';
+  var CUSTOM = '__custom__';
+  var DEFAULT_DRUGS = ['Alcohol', 'Nicotine / tobacco', 'Cannabis', 'Cocaine', 'Opioids',
+    'Benzodiazepines', 'Stimulants', 'MDMA', 'Psychedelics', 'Methamphetamine'];
+
+  var storageOk = true;
+  var state;
+
+  // ---------- helpers ----------
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function today() { return ymd(new Date()); }
+  function daysBetween(a, b) {
+    var x = a.split('-').map(Number), y = b.split('-').map(Number);
+    return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 86400000);
+  }
+  function pretty(s) {
+    var p = s.split('-').map(Number);
+    return new Date(p[0], p[1] - 1, p[2]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function prettyLong(s) {
+    var p = s.split('-').map(Number);
+    return new Date(p[0], p[1] - 1, p[2]).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function $(id) { return document.getElementById(id); }
+
+  var toastTimer;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+
+  // ---------- storage ----------
+  function fresh() {
+    return { drugs: DEFAULT_DRUGS.slice(), entries: [], tracked: {}, hidden: [], checkins: {}, started: today() };
+  }
+  function load() {
+    try {
+      localStorage.setItem(KEY + '.test', '1');
+      localStorage.removeItem(KEY + '.test');
+    } catch (e) { storageOk = false; }
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var s = JSON.parse(raw), f = fresh();
+        for (var k in f) { if (!has(s, k)) s[k] = f[k]; }
+        return s;
+      }
+    } catch (e) {}
+    return fresh();
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { storageOk = false; }
+    $('storageWarn').classList.toggle('hidden', storageOk);
+  }
+
+  // ---------- core logic ----------
+  function counters() {
+    var names = {};
+    Object.keys(state.tracked).forEach(function (d) { names[d] = true; });
+    state.entries.forEach(function (e) { names[e.drug] = true; });
+    var t = today();
+    return Object.keys(names)
+      .filter(function (d) { return state.hidden.indexOf(d) === -1; })
+      .map(function (d) {
+        var last = '';
+        state.entries.forEach(function (e) { if (e.drug === d && e.date > last) last = e.date; });
+        var base = has(state.tracked, d) ? state.tracked[d] : '';
+        var ref = last > base ? last : base;
+        return { name: d, days: daysBetween(ref, t), ref: ref, fromUse: !!last && ref === last, usedToday: last === t };
+      })
+      .sort(function (a, b) { return b.days - a.days || a.name.localeCompare(b.name); });
+  }
+  window.__counters = counters; // handy for testing
+
+  function dayLogged(date) {
+    return !!state.checkins[date] || state.entries.some(function (e) { return e.date === date; });
+  }
+
+  // ---------- rendering ----------
+  function drugOptions(selectEl, keepValue) {
+    var prev = keepValue ? selectEl.value : '';
+    var opts = state.drugs.slice().sort(function (a, b) { return a.localeCompare(b); })
+      .map(function (d) { return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; });
+    opts.push('<option value="' + CUSTOM + '">+ Custom…</option>');
+    selectEl.innerHTML = opts.join('');
+    if (prev && Array.prototype.some.call(selectEl.options, function (o) { return o.value === prev; })) selectEl.value = prev;
+  }
+
+  function render() {
+    var t = today();
+    var sel = $('dateInput').value || t;
+
+    $('todayLabel').textContent = prettyLong(t);
+    var chip = $('statusChip');
+    var done = dayLogged(t);
+    chip.textContent = done ? 'Logged today ✓' : 'Not logged yet';
+    chip.className = 'chip' + (done ? '' : ' todo');
+
+    $('dayHeading').textContent = sel === t ? 'Entries for today' : 'Entries for ' + pretty(sel);
+    var dayEntries = state.entries.filter(function (e) { return e.date === sel; });
+    var dayHtml = dayEntries.map(entryRow).join('');
+    if (!dayHtml) {
+      dayHtml = '<p class="empty">' + (state.checkins[sel] ? 'You checked in: nothing used.' : 'Nothing logged for this day yet.') + '</p>';
+    }
+    $('dayList').innerHTML = dayHtml;
+
+    var cs = counters();
+    $('counters').innerHTML = cs.length ? cs.map(function (c) {
+      var meta = c.usedToday ? 'Used today' :
+        (c.fromUse ? 'Since last use on ' + pretty(c.ref) : 'Since ' + pretty(c.ref));
+      var sub = c.days === 1 ? 'day' : 'days';
+      return '<div class="counter"><div><div class="name">' + esc(c.name) + '</div><div class="meta">' + esc(meta) + '</div></div>' +
+        '<div style="display:flex;align-items:center;gap:6px"><div class="num">' + c.days + '<small>' + sub + '</small></div>' +
+        '<button class="x" data-hide="' + esc(c.name) + '" aria-label="Stop tracking ' + esc(c.name) + '">×</button></div></div>';
+    }).join('') : '<p class="empty">Log a substance or start tracking one and its counter will show up here.</p>';
+
+    var recent = state.entries.slice().sort(function (a, b) {
+      return (b.date + b.time).localeCompare(a.date + a.time);
+    }).slice(0, 20);
+    $('recent').innerHTML = recent.length ? recent.map(function (e) { return entryRow(e, true); }).join('') :
+      '<p class="empty">No entries yet.</p>';
+  }
+
+  function entryRow(e, showDate) {
+    var meta = (showDate ? pretty(e.date) + ' · ' : '') + esc(e.time || '') + (e.note ? ' · ' + esc(e.note) : '');
+    return '<div class="item"><div><div class="t">' + esc(e.drug) + '</div><div class="m">' + meta + '</div></div>' +
+      '<button class="x" data-del="' + esc(e.id) + '" aria-label="Delete entry">×</button></div>';
+  }
+
+  // ---------- actions ----------
+  function resolveDrug(selectEl, customEl) {
+    var drug = selectEl.value;
+    if (drug === CUSTOM) {
+      drug = customEl.value.trim();
+      if (!drug) { toast('Type a name first'); return null; }
+      var existing = state.drugs.filter(function (d) { return d.toLowerCase() === drug.toLowerCase(); })[0];
+      if (existing) drug = existing; else state.drugs.push(drug);
+    }
+    return drug;
+  }
+  function unhide(d) { state.hidden = state.hidden.filter(function (x) { return x !== d; }); }
+
+  function addEntry() {
+    var date = $('dateInput').value || today();
+    if (date > today()) { toast('Pick today or an earlier day'); return; }
+    var drug = resolveDrug($('drugSelect'), $('customInput'));
+    if (!drug) return;
+    state.entries.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date: date, time: pad(new Date().getHours()) + ':' + pad(new Date().getMinutes()),
+      drug: drug, note: $('noteInput').value.trim()
+    });
+    if (!has(state.tracked, drug)) state.tracked[drug] = date;
+    unhide(drug);
+    delete state.checkins[date];
+    $('noteInput').value = ''; $('customInput').value = '';
+    drugOptions($('drugSelect'), false); drugOptions($('trackSelect'), false);
+    $('drugSelect').value = drug;
+    $('customWrap').classList.add('hidden');
+    save(); render(); toast('Added');
+  }
+
+  function nothingUsed() {
+    var date = $('dateInput').value || today();
+    if (date > today()) { toast('Pick today or an earlier day'); return; }
+    if (state.entries.some(function (e) { return e.date === date; })) {
+      toast('You already logged something for this day'); return;
+    }
+    state.checkins[date] = true;
+    save(); render(); toast('Checked in');
+  }
+
+  function startTracking() {
+    var date = $('trackDate').value || today();
+    if (date > today()) { toast('Pick today or an earlier day'); return; }
+    var drug = resolveDrug($('trackSelect'), $('trackCustom'));
+    if (!drug) return;
+    state.tracked[drug] = date;
+    unhide(drug);
+    $('trackCustom').value = '';
+    drugOptions($('drugSelect'), true); drugOptions($('trackSelect'), false);
+    $('trackCustomWrap').classList.add('hidden');
+    save(); render(); toast('Tracking ' + drug);
+  }
+
+  function onClick(ev) {
+    var del = ev.target.getAttribute && ev.target.getAttribute('data-del');
+    var hide = ev.target.getAttribute && ev.target.getAttribute('data-hide');
+    if (del) {
+      if (!confirm('Delete this entry?')) return;
+      state.entries = state.entries.filter(function (e) { return e.id !== del; });
+      save(); render();
+    } else if (hide) {
+      if (!confirm('Stop showing a counter for ' + hide + '? Your logged entries stay saved.')) return;
+      if (state.hidden.indexOf(hide) === -1) state.hidden.push(hide);
+      save(); render();
+    }
+  }
+
+  function copyBackup() {
+    var text = JSON.stringify(state);
+    function fallback() {
+      var ta = $('restoreText'); ta.value = text; ta.focus(); ta.select();
+      toast('Select all and copy the text below');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Backup copied'); }, fallback);
+    } else { fallback(); }
+  }
+
+  function restore() {
+    var raw = $('restoreText').value.trim();
+    if (!raw) { toast('Paste a backup first'); return; }
+    try {
+      var s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.entries) || !Array.isArray(s.drugs)) throw new Error('bad');
+      if (!confirm('Replace everything on this phone with this backup?')) return;
+      var f = fresh();
+      for (var k in f) { if (!has(s, k)) s[k] = f[k]; }
+      state = s;
+      save(); drugOptions($('drugSelect'), false); drugOptions($('trackSelect'), false);
+      $('restoreText').value = ''; render(); toast('Restored');
+    } catch (e) { toast("That doesn't look like a backup"); }
+  }
+
+  // ---------- init ----------
+  function makeIcon() {
+    try {
+      var c = document.createElement('canvas'); c.width = c.height = 180;
+      var x = c.getContext('2d');
+      x.fillStyle = '#2f6f5e'; x.fillRect(0, 0, 180, 180);
+      x.strokeStyle = '#ffffff'; x.lineWidth = 14; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.beginPath(); x.moveTo(52, 92); x.lineTo(80, 120); x.lineTo(130, 62); x.stroke();
+      $('touch-icon').href = c.toDataURL('image/png');
+    } catch (e) {}
+  }
+
+  function init() {
+    state = load();
+    makeIcon();
+    $('dateInput').value = today(); $('dateInput').max = today();
+    $('trackDate').value = today(); $('trackDate').max = today();
+    drugOptions($('drugSelect'), false); drugOptions($('trackSelect'), false);
+    $('appUrl').textContent = location.href.split('#')[0];
+    $('storageWarn').classList.toggle('hidden', storageOk);
+
+    $('drugSelect').addEventListener('change', function () {
+      $('customWrap').classList.toggle('hidden', this.value !== CUSTOM);
+    });
+    $('trackSelect').addEventListener('change', function () {
+      $('trackCustomWrap').classList.toggle('hidden', this.value !== CUSTOM);
+    });
+    $('dateInput').addEventListener('change', render);
+    $('addBtn').addEventListener('click', addEntry);
+    $('noneBtn').addEventListener('click', nothingUsed);
+    $('trackBtn').addEventListener('click', startTracking);
+    $('copyBtn').addEventListener('click', copyBackup);
+    $('restoreBtn').addEventListener('click', restore);
+    document.addEventListener('click', onClick);
+
+    // refresh counters when the app comes back to the foreground (e.g. after midnight)
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        $('dateInput').max = today();
+        if (!$('dateInput').value) $('dateInput').value = today();
+        render();
+      }
+    });
+    render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
